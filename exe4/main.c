@@ -61,6 +61,46 @@ void btn_1_task(void *p) {
         }
     }
 }
+void led_2_task(void *p) {
+    gpio_init(LED_PIN_G);
+    gpio_set_dir(LED_PIN_G, GPIO_OUT);
+
+    int delay = 0;
+
+    while (true) {
+        if (xQueueReceive(xQueueButId, &delay, 0)) {
+            printf("%d\n", delay);
+        }
+
+        if (delay > 0) {
+            gpio_put(LED_PIN_G, 1);
+            vTaskDelay(pdMS_TO_TICKS(delay));
+            gpio_put(LED_PIN_G, 0);
+            vTaskDelay(pdMS_TO_TICKS(delay));
+        }
+    }
+}
+
+void btn_2_task(void *p) {
+    gpio_init(BTN_PIN_G);
+    gpio_set_dir(BTN_PIN_G, GPIO_IN);
+    gpio_pull_up(BTN_PIN_G);
+    gpio_set_irq_enabled_with_callback(BTN_PIN_R, GPIO_IRQ_EDGE_FALL, true,
+                                       &btn_callback);
+
+    int delay = 0;
+    while (true) {
+        if (xSemaphoreTake(xSemaphore_r, pdMS_TO_TICKS(500)) == pdTRUE) {
+            if (delay < 1000) {
+                delay += 100;
+            } else {
+                delay = 100;
+            }
+            printf("delay btn %d \n", delay);
+            xQueueSend(xQueueButId, &delay, 0);
+        }
+    }
+}
 
 int main() {
     stdio_init_all();
